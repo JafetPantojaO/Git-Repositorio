@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Préstamos</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="img/lendlens.png">
+</head>
+<body>
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <h1>Lend Lens 💸</h1>
+            <p>Sistema de Gestión de Préstamos</p>
+            
+            <div class="form">
+                <div class="input-group input-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="loginUsuario" placeholder="Usuario" value="cliente">
+                </div>
+                <div class="input-group input-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="loginPassword" placeholder="Contraseña" value="cliente">
+                </div>
+                
+                <div class="error-message" id="loginError">
+                    ❌ Usuario o contraseña incorrectos
+                </div>
+                <button class="btn-primary btn-login" onclick="iniciarSesion()">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+            </div>
+            
+            <div style="margin-top: 20px; font-size: 0.9em; color: #718096;">
+                <p><strong>Credenciales de prueba:</strong></p>
+                <p>Admin: **admin** / **admin**</p>
+                <p>Cliente: **cliente** / **cliente**</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminAppScreen" class="app" style="display: none;">
+        <header class="header">
+            <div class="header-content">
+                <h1>Lend Lens 💸</h1>
+                <p>Gestor de cartera de prestamos</p>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-number" id="totalClientes">0</span>
+                    <span class="stat-label">Clientes</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="totalCartera">$0</span>
+                    <span class="stat-label">Cartera</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="diasAtrasoTotal">0</span>
+                    <span class="stat-label">Días atraso total</span>
+                </div>
+                <div class="stat">
+                    <button class="btn-small" onclick="cerrarSesion()" style="background: #667eea; color: white;">
+                        <i class="fas fa-sign-out-alt"></i> Salir
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" onclick="mostrarSeccion('lista')">👥 Clientes</button>
+            <button class="tab" onclick="mostrarSeccion('agregar')">➕ Nuevo Cliente</button>
+            <button class="tab" onclick="mostrarSeccion('estadisticas')">📊 Estadísticas</button>
+        </nav>
+
+        <main class="main">
+            <section id="lista" class="section active">
+                <div class="section-header">
+                    <h2>Lista de Clientes</h2>
+                    <div class="search">
+                        <input type="text" id="buscar" placeholder="🔍 Buscar cliente..." onkeyup="filtrarClientes()">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Contacto</th>
+                                <th>Préstamo</th>
+                                <th>Fecha Préstamo</th>
+                                <th>Estado</th>
+                                <th>Días Atraso</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaClientes"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="agregar" class="section">
+                <div class="card">
+                    <h2>Agregar Nuevo Cliente</h2>
+                    <form onsubmit="agregarCliente(event)" class="form" id="formCliente">
+                        <div class="input-group">
+                            <input type="text" id="nombre" placeholder="Nombre completo" required>
+                        </div>
+                        
+                        <div class="input-row">
+                            <div class="input-group">
+                                <input type="email" id="email" placeholder="Correo electrónico" required>
+                            </div>
+                            <div class="input-group">
+                                <input type="tel" id="telefono" placeholder="Teléfono" required>
+                            </div>
+                        </div>
+                        
+                        <div class="input-row">
+                            <div class="input-group">
+                                <input type="number" id="monto" placeholder="Monto préstamo" step="0.01" required>
+                            </div>
+                            <div class="input-group">
+                                <input type="number" id="pago" placeholder="Pago diario" step="0.01" required>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group date-input">
+                            <label for="fechaPrestamo">Fecha del préstamo:</label>
+                            <input type="date" id="fechaPrestamo" required>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Guardar Cliente
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <section id="estadisticas" class="section">
+                <div class="stats-grid">
+                    <div class="stat-card success">
+                        <h3>Al Día</h3>
+                        <div class="stat-value" id="statsAlDia">0</div>
+                        <div class="stat-percent" id="porcentajeAlDia">0%</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <h3>Atrasados</h3>
+                        <div class="stat-value" id="statsAtrasados">0</div>
+                        <div class="stat-percent" id="porcentajeAtrasados">0%</div>
+                    </div>
+                    <div class="stat-card danger">
+                        <h3>Morosos</h3>
+                        <div class="stat-value" id="statsMorosos">0</div>
+                        <div class="stat-percent" id="porcentajeMorosos">0%</div>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top: 20px;">
+                    <h3>📅 Resumen por Fechas</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="fechaInicio">Fecha inicio:</label>
+                            <input type="date" id="fechaInicio">
+                        </div>
+                        <div class="input-group">
+                            <label for="fechaFin">Fecha fin:</label>
+                            <input type="date" id="fechaFin">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="btn-primary" onclick="filtrarPorFecha()">
+                            <i class="fas fa-filter"></i> Filtrar por Fecha
+                        </button>
+                        <button class="btn-primary" onclick="resetearFiltro()" style="background: #718096;">
+                            <i class="fas fa-sync-alt"></i> Mostrar Todos
+                        </button>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <p><strong>Préstamos en rango seleccionado:</strong> <span id="prestamosFiltrados">0</span></p>
+                        <p><strong>Cartera filtrada:</strong> $<span id="carteraFiltrada">0</span></p>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            Hecho por Dante Cortazar, Jafet Pantoja, Alejandro Burgos, Darío Isidoro y Bryan Aldahi, 2025
+        </footer>
+    </div>
+
+    <div id="clientAppScreen" class="app" style="display: none;">
+        <header class="header">
+            <div class="header-content">
+                <h1>Lend Lens Cliente 🤝</h1>
+                <p>Panel de Pagos y Préstamos</p>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-number text-info"><i class="fas fa-user-circle"></i></span>
+                    <span class="stat-label">Mi Cuenta</span>
+                </div>
+                <div class="stat">
+                    <button class="btn-small" onclick="cerrarSesion()" style="background: #667eea; color: white;">
+                        <i class="fas fa-sign-out-alt"></i> Salir
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <main class="main">
+            <section id="historial" class="section active">
+                <div class="section-header">
+                    <h2>Mi Historial de Pago</h2>
+                    <p class="section-subtitle">Gestión detallada de transacciones y estados de pago.</p>
+                </div>
+
+                <div class="client-dashboard-grid">
+                    <div class="client-info-card">
+                        <h3>Estado de Préstamo</h3>
+                        <div class="flex items-center gap-3 mb-4">
+                            <i class="fas fa-user-circle icon-xl text-info"></i>
+                            <div>
+                                <strong class="text-lg">Cliente Demo (ID: 456)</strong>
+                                <p class="text-sm text-gray-500">Préstamo Activo desde 2024-01-01</p>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-primary w-full mt-3" onclick="abrirModalPago()">
+                            <i class="fas fa-money-bill-transfer"></i> Realizar un Pago
+                        </button>
+                        
+                        <button class="btn-primary w-full mt-2" style="background: #e53e3e;">
+                            <i class="fas fa-file-contract"></i> Solicitar Nuevo Préstamo
+                        </button>
+                    </div>
+
+                    <div class="client-stats-grid">
+                        <div class="payment-card shadow-md">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-semibold">Saldo Pendiente</h4>
+                                <i class="fas fa-credit-card text-lg text-info"></i>
+                            </div>
+                            <div class="payment-value danger">$300.00</div>
+                            <p class="text-sm text-gray-500">Monto restante por pagar</p>
+                        </div>
+
+                        <div class="payment-card shadow-md">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-semibold">Estado del Préstamo</h4>
+                                <i class="fas fa-clock text-lg text-warning"></i>
+                            </div>
+                            <div class="payment-status atrasado-status">Atrasado Poco</div>
+                            <p class="text-sm text-gray-500">Estatus actual del préstamo</p>
+                        </div>
+
+                        <div class="payment-card shadow-md">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-semibold">Total Pendiente (Cobrar)</h4>
+                                <i class="fas fa-dollar-sign text-lg text-success"></i>
+                            </div>
+                            <div class="payment-value success">$200.00</div>
+                            <p class="text-sm text-gray-500">Monto aún por cobrar</p>
+                        </div>
+
+                        <div class="payment-card shadow-md">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-semibold">Pagos Atrasados</h4>
+                                <i class="fas fa-exclamation-triangle text-lg text-danger"></i>
+                            </div>
+                            <div class="payment-count danger">1</div>
+                            <p class="text-sm text-gray-500">Número de pagos con retraso</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5 card">
+                    <h3>Historial de Pagos</h3>
+                    <div class="history-list mt-3">
+                        
+                        <div class="history-item">
+                            <div class="icon-status success-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold">Pago #1: $150.00</p>
+                                <p class="text-sm text-gray-600">Vencimiento: 2024-01-10</p>
+                                <p class="text-sm text-gray-600">Pagado: 2024-01-09</p>
+                            </div>
+                            <div class="status-indicator success-dot">
+                                Pagado
+                                <span class="dot success-dot pulse-effect"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="history-item">
+                            <div class="icon-status warning-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold">Pago #2: $150.00</p>
+                                <p class="text-sm text-gray-600">Vencimiento: 2024-02-10</p>
+                            </div>
+                            <div class="status-indicator warning-dot">
+                                Pendiente (Atrasado)
+                                <span class="dot warning-dot pulse-effect"></span>
+                            </div>
+                        </div>
+
+                        <div class="history-item">
+                            <div class="icon-status info-icon">
+                                <i class="fas fa-hourglass-half"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold">Pago #3: $150.00</p>
+                                <p class="text-sm text-gray-600">Vencimiento: 2024-03-10</p>
+                            </div>
+                            <div class="status-indicator info-dot">
+                                Pendiente
+                                <span class="dot info-dot"></span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            Panel de Cliente - Contactar a Soporte: 555-000-1111
+        </footer>
+    </div>
+
+    <div id="modalPago" class="modal-backdrop" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>💳 Realizar Pago con Tarjeta</h2>
+                <button class="close-btn" onclick="cerrarModalPago()">&times;</button>
+            </div>
+            <form id="formPagoTarjeta" onsubmit="procesarPago(event)">
+                <div class="input-group">
+                    <label for="montoPago">Monto a pagar:</label>
+                    <input type="number" id="montoPago" placeholder="Ej: 150.00" step="0.01" value="150.00" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="numeroTarjeta">Número de Tarjeta:</label>
+                    <input type="text" id="numeroTarjeta" placeholder="XXXX XXXX XXXX XXXX" maxlength="16" required>
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="fechaExp">Fecha Exp. (MM/AA):</label>
+                        <input type="text" id="fechaExp" placeholder="MM/AA" maxlength="5" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="cvv">CVV:</label>
+                        <input type="text" id="cvv" placeholder="XXX" maxlength="3" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="nombreTitular">Nombre del Titular:</label>
+                    <input type="text" id="nombreTitular" placeholder="Tal como aparece en la tarjeta" required>
+                </div>
+
+                <button type="submit" class="btn-primary w-full mt-4">
+                    <i class="fas fa-money-check-dollar"></i> Confirmar Pago
+                </button>
+            </form>
+            <p class="text-sm text-gray-500 mt-3" style="font-size: 0.85em; text-align: center;">Tus datos son procesados de forma segura.</p>
+        </div>
+    </div>
+
+
+    <script>
+        // Variables globales
+        let clientes = [];
+        let sesionActiva = false;
+        let rolActual = null;
+
+        // Credenciales de administrador y cliente
+        const ADMIN_USER = "admin";
+        const ADMIN_PASS = "admin";
+        const CLIENT_USER = "cliente"; 
+        const CLIENT_PASS = "cliente"; 
+
+        // Función principal para manejar el login
+        function iniciarSesion() {
+            const usuario = document.getElementById('loginUsuario').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            document.getElementById('loginError').style.display = 'none';
+
+            // 1. INTENTAR LOGIN COMO ADMINISTRADOR
+            if (usuario === ADMIN_USER && password === ADMIN_PASS) {
+                rolActual = 'admin';
+                sesionActiva = true;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminAppScreen').style.display = 'block';
+                
+                cargarDatosIniciales();
+                actualizarTodo();
+                mostrarSeccion('lista');
+                return; 
+            
+            } 
+            
+            // 2. INTENTAR LOGIN COMO CLIENTE
+            if (usuario === CLIENT_USER && password === CLIENT_PASS) {
+                rolActual = 'client';
+                sesionActiva = true;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('clientAppScreen').style.display = 'block';
+                return;
+            } 
+            
+            // 3. CREDENCIALES INCORRECTAS
+            document.getElementById('loginError').style.display = 'block';
+        }
+
+        // Función para cerrar sesión
+        function cerrarSesion() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                sesionActiva = false;
+                rolActual = null;
+                document.getElementById('adminAppScreen').style.display = 'none';
+                document.getElementById('clientAppScreen').style.display = 'none';
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('loginPassword').value = '';
+            }
+        }
+
+        // Permitir login con Enter
+        document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                iniciarSesion();
+            }
+        });
+
+        // --- FUNCIONES DE LA MODAL DE PAGO (NUEVAS) ---
+
+        function abrirModalPago() {
+            if (rolActual === 'client') {
+                document.getElementById('modalPago').style.display = 'flex';
+                // Opcional: Centrar y resetear el formulario cada vez que se abre
+                document.getElementById('formPagoTarjeta').reset();
+            }
+        }
+
+        function cerrarModalPago() {
+            document.getElementById('modalPago').style.display = 'none';
+        }
+
+        function procesarPago(e) {
+            e.preventDefault();
+            
+            const monto = document.getElementById('montoPago').value;
+            const tarjeta = document.getElementById('numeroTarjeta').value;
+            const exp = document.getElementById('fechaExp').value;
+            const cvv = document.getElementById('cvv').value;
+
+            // Simulación de validación (solo verificar que los campos no estén vacíos)
+            if (!monto || !tarjeta || !exp || !cvv) {
+                alert('Por favor, rellena todos los campos de pago.');
+                return;
+            }
+            
+            // Simulación de procesamiento de pago exitoso
+            alert(`✅ Pago de $${monto} procesado exitosamente con la tarjeta terminada en ${tarjeta.slice(-4)}.\n¡Gracias por tu pago!`);
+
+            // Cerrar modal después del pago (simulado)
+            cerrarModalPago();
+            
+            // Aquí iría la lógica real para registrar el pago en la base de datos o en la lista de clientes.
+        }
+
+        // Permitir cerrar la modal haciendo clic fuera de ella (en el backdrop)
+        document.getElementById('modalPago').addEventListener('click', function(event) {
+            if (event.target === document.getElementById('modalPago')) {
+                cerrarModalPago();
+            }
+        });
+
+
+        // --- Funciones de Administrador (se mantienen sin cambios en la lógica) ---
+
+        function cargarDatosIniciales() {
+            const datosGuardados = localStorage.getItem('clientes');
+            
+            if (datosGuardados) {
+                clientes = JSON.parse(datosGuardados);
+            } else {
+                clientes = [
+                    {
+                        nombre: "Ana García López",
+                        email: "ana.garcia@ejemplo.com",
+                        telefono: "555-123-4567",
+                        monto: 5000,
+                        pago: 55.56,
+                        fechaPrestamo: obtenerFechaHaceDias(10), // Hace 10 días
+                        diasAtraso: 0
+                    },
+                    {
+                        nombre: "Carlos Martínez Rodríguez",
+                        email: "carlos.martinez@ejemplo.com",
+                        telefono: "555-987-6543",
+                        monto: 3000,
+                        pago: 33.33,
+                        fechaPrestamo: obtenerFechaHaceDias(33), // Hace 33 días
+                        diasAtraso: 0
+                    },
+                    {
+                        nombre: "María Fernández Sánchez",
+                        email: "maria.fernandez@ejemplo.com",
+                        telefono: "555-456-7890",
+                        monto: 8000,
+                        pago: 88.89,
+                        fechaPrestamo: obtenerFechaHaceDias(65), // Hace 65 días
+                        diasAtraso: 0
+                    }
+                ];
+                
+                clientes.forEach(cliente => {
+                    cliente.diasAtraso = calcularDiasAtraso(cliente.fechaPrestamo);
+                });
+                
+                guardarClientes();
+            }
+        }
+
+        function obtenerFechaHaceDias(dias) {
+            const fecha = new Date();
+            fecha.setDate(fecha.getDate() - dias);
+            const año = fecha.getFullYear();
+            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dia = String(fecha.getDate()).padStart(2, '0');
+            return `${año}-${mes}-${dia}`;
+        }
+
+        function calcularDiasAtraso(fechaPrestamoStr) {
+            try {
+                const fechaPrestamo = new Date(fechaPrestamoStr);
+                
+                if (isNaN(fechaPrestamo.getTime())) {
+                    return 0;
+                }
+                
+                const hoy = new Date();
+                const prestamoNormalizado = new Date(fechaPrestamo.getFullYear(), fechaPrestamo.getMonth(), fechaPrestamo.getDate());
+                const hoyNormalizado = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+                
+                const diferenciaMs = hoyNormalizado - prestamoNormalizado;
+                const diasTranscurridos = Math.floor(diferenciaMs / (1000 * 60 * 60 * 24));
+                
+                return diasTranscurridos > 0 ? diasTranscurridos : 0;
+            } catch (error) {
+                return 0;
+            }
+        }
+
+        function formatearFecha(fechaStr) {
+            try {
+                const fecha = new Date(fechaStr);
+                if (isNaN(fecha.getTime())) {
+                    return "Fecha inválida";
+                }
+                return fecha.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (error) {
+                return "Fecha inválida";
+            }
+        }
+
+        function obtenerFechaHoy() {
+            const hoy = new Date();
+            const año = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            return `${año}-${mes}-${dia}`;
+        }
+
+        function mostrarSeccion(id) {
+            if (rolActual !== 'admin') return;
+            
+            document.querySelectorAll('#adminAppScreen .section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('#adminAppScreen .tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            // Selecciona el botón correcto, incluso si se llama desde JS (no hay event.target)
+            const targetButton = document.querySelector(`.tabs button[onclick*="'${id}'"]`);
+            if(targetButton) {
+                targetButton.classList.add('active');
+            }
+            
+            if (id === 'estadisticas') {
+                actualizarEstadisticas();
+            }
+            
+            if (id === 'agregar') {
+                document.getElementById('fechaPrestamo').value = obtenerFechaHoy();
+            }
+        }
+
+        function actualizarTodo() {
+            if (rolActual !== 'admin') return;
+            
+            clientes.forEach(cliente => {
+                cliente.diasAtraso = calcularDiasAtraso(cliente.fechaPrestamo);
+            });
+            
+            actualizarTabla();
+            actualizarStatsHeader();
+            actualizarEstadisticas();
+            guardarClientes();
+        }
+
+        function actualizarTabla() {
+            const tbody = document.getElementById('tablaClientes');
+            tbody.innerHTML = clientes.map((cliente, index) => {
+                const estado = cliente.diasAtraso === 0 ? 'al-dia' : cliente.diasAtraso > 30 ? 'moroso' : 'atrasado';
+                const textoEstado = cliente.diasAtraso === 0 ? 'Al Día' : cliente.diasAtraso > 30 ? 'Moroso' : `${cliente.diasAtraso}d atraso`;
+                
+                return `<tr>
+                    <td><strong>${cliente.nombre}</strong></td>
+                    <td class="contact-info">
+                        <span><i class="fas fa-envelope"></i> ${cliente.email}</span>
+                        <span><i class="fas fa-phone"></i> ${cliente.telefono}</span>
+                    </td>
+                    <td>$${cliente.monto.toLocaleString()}</td>
+                    <td>${formatearFecha(cliente.fechaPrestamo)}</td>
+                    <td><span class="badge ${estado}">${textoEstado}</span></td>
+                    <td><span class="${cliente.diasAtraso > 0 ? 'badge atrasado' : ''}">${cliente.diasAtraso} días</span></td>
+                    <td>
+                        <button class="btn-small" onclick="eliminarCliente(${index})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function actualizarStatsHeader() {
+            document.getElementById('totalClientes').textContent = clientes.length;
+            const totalCartera = clientes.reduce((sum, c) => sum + c.monto, 0);
+            document.getElementById('totalCartera').textContent = `$${totalCartera.toLocaleString()}`;
+            
+            const totalAtraso = clientes.reduce((sum, c) => sum + c.diasAtraso, 0);
+            document.getElementById('diasAtrasoTotal').textContent = totalAtraso;
+        }
+
+        function actualizarEstadisticas() {
+            const alDia = clientes.filter(c => c.diasAtraso === 0).length;
+            const atrasados = clientes.filter(c => c.diasAtraso > 0 && c.diasAtraso <= 30).length;
+            const morosos = clientes.filter(c => c.diasAtraso > 30).length;
+            const total = clientes.length;
+            
+            document.getElementById('statsAlDia').textContent = alDia;
+            document.getElementById('statsAtrasados').textContent = atrasados;
+            document.getElementById('statsMorosos').textContent = morosos;
+            
+            document.getElementById('porcentajeAlDia').textContent = total ? `${Math.round((alDia/total)*100)}%` : '0%';
+            document.getElementById('porcentajeAtrasados').textContent = total ? `${Math.round((atrasados/total)*100)}%` : '0%';
+            document.getElementById('porcentajeMorosos').textContent = total ? `${Math.round((morosos/total)*100)}%` : '0%';
+        }
+
+        function filtrarClientes() {
+            const busqueda = document.getElementById('buscar').value.toLowerCase();
+            const filas = document.querySelectorAll('#tablaClientes tr');
+            filas.forEach(fila => {
+                const texto = fila.textContent.toLowerCase();
+                fila.style.display = texto.includes(busqueda) ? '' : 'none';
+            });
+        }
+
+        function filtrarPorFecha() {
+            const fechaInicio = document.getElementById('fechaInicio').value;
+            const fechaFin = document.getElementById('fechaFin').value;
+            
+            if (!fechaInicio || !fechaFin) {
+                alert('Por favor, selecciona ambas fechas');
+                return;
+            }
+            
+            const fechaInicioObj = new Date(fechaInicio);
+            const fechaFinObj = new Date(fechaFin);
+            
+            const clientesFiltrados = clientes.filter(cliente => {
+                try {
+                    const fechaPrestamo = new Date(cliente.fechaPrestamo);
+                    // Incluye la fecha de fin en el rango
+                    const fechaFinComparacion = new Date(fechaFinObj.getTime());
+                    fechaFinComparacion.setDate(fechaFinComparacion.getDate() + 1); 
+
+                    return fechaPrestamo >= fechaInicioObj && fechaPrestamo < fechaFinComparacion;
+                } catch (e) {
+                    return false;
+                }
+            });
+            
+            document.getElementById('prestamosFiltrados').textContent = clientesFiltrados.length;
+            const carteraFiltrada = clientesFiltrados.reduce((sum, c) => sum + c.monto, 0);
+            document.getElementById('carteraFiltrada').textContent = carteraFiltrada.toLocaleString();
+            
+            alert(`Filtro aplicado: ${clientesFiltrados.length} préstamos encontrados.`);
+        }
+        
+        function resetearFiltro() {
+            document.getElementById('prestamosFiltrados').textContent = clientes.length;
+            const totalCartera = clientes.reduce((sum, c) => sum + c.monto, 0);
+            document.getElementById('carteraFiltrada').textContent = totalCartera.toLocaleString();
+            
+            // Resetear las fechas
+            const hoy = obtenerFechaHoy();
+            document.getElementById('fechaInicio').value = hoy;
+            document.getElementById('fechaFin').value = hoy;
+            
+            alert('Filtro de fechas reseteado. Se muestran todos los datos.');
+        }
+
+        // Función para agregar cliente
+        function agregarCliente(event) {
+            event.preventDefault();
+            if (!sesionActiva) return;
+
+            const nuevo = {
+                nombre: document.getElementById('nombre').value,
+                email: document.getElementById('email').value,
+                telefono: document.getElementById('telefono').value,
+                monto: parseFloat(document.getElementById('monto').value),
+                pago: parseFloat(document.getElementById('pago').value),
+                fechaPrestamo: document.getElementById('fechaPrestamo').value,
+                diasAtraso: calcularDiasAtraso(document.getElementById('fechaPrestamo').value)
+            };
+            
+            clientes.push(nuevo);
+            guardarClientes();
+            actualizarTodo();
+            
+            // Resetear formulario
+            document.getElementById('formCliente').reset();
+            document.getElementById('fechaPrestamo').value = obtenerFechaHoy();
+            
+            mostrarSeccion('lista');
+            
+            // Mostrar mensaje de éxito
+            alert('Cliente agregado exitosamente');
+        }
+
+        // Función para eliminar cliente
+        function eliminarCliente(index) {
+            if (!sesionActiva) return;
+            
+            if (confirm('¿Estás seguro de eliminar este cliente?')) {
+                clientes.splice(index, 1);
+                guardarClientes();
+                actualizarTodo();
+            }
+        }
+
+        // Función para guardar clientes en localStorage
+        function guardarClientes() {
+            localStorage.setItem('clientes', JSON.stringify(clientes));
+        }
+
+        // Inicializar al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Establecer fechas por defecto para filtros
+            const hoy = obtenerFechaHoy();
+            document.getElementById('fechaInicio').value = hoy;
+            document.getElementById('fechaFin').value = hoy;
+        });
+    </script>
+</body>
+</html>
